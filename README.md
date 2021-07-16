@@ -1,5 +1,20 @@
-Cofense Triage v3 integration allows users to fetch the reported phishing reports. It also provides commands to retrieve entities like reporters, rules, categories, and more.
-This integration was integrated and tested with version 1.23.0rc3 of Cofense Triage v3.
+The Cofense Triage v3 integration uses the Cofense Triage v2 API (previous integrations were limited to Triage v1 API) that allows users to ingest phishing reports as incident alerts and execute commands.
+
+Security teams can ingest data from Triage such as email reporters, email reports and clusters, threat indicators, and rule matching to name a few. In addition, ingest and create threat indicators, categorize reports, and obtain second stage threat indicators from malicious emails. This integration was integrated and tested with version 1.22.0 of Cofense Triage.
+
+## What's new in Cofense Triage v3?
+Use Cofense Triage v3 XSOAR integration application to take advantage of Cofense Triage v2 API for bidirectional communication between Triage and XSOAR. 
+Earlier, the Cofense Triage v2 was only capable of pulling the indicators from Cofense. The new integration provides:
+ - Report Categorization playbook investigates reports that are unprocessed or uncategorized on Cofense Triage as incident alerts in XSOAR and categorizes them based on the severity of the incident.
+ - Cluster Report Categorization playbook is used to retrieve the reports of specific clusters and perform the categorization of reports.
+ - Automation scripts that download all reports associated with the email address and enrich the threat indicators.
+ - Mirroring feature that updates the XSOAR incidents when Cofense Triage reports are updated.
+
+## What Mirroring functionality does?
+This feature is compliant with XSOAR version 6.0 and above. This feature automatically updates the Cortex XSOAR incidents if any report is changed or updated in Cofense Triage. 
+ - Users can enable or disable this feature from the integration parameters.
+ - Supports only incoming data that are updated in Cofense Triage.
+
 ## Configure Cofense Triage v3 on Cortex XSOAR
 
 1. Navigate to **Settings** > **Integrations** > **Servers & Services**.
@@ -9,15 +24,15 @@ This integration was integrated and tested with version 1.23.0rc3 of Cofense Tri
     | **Parameter** | **Description** | **Required** |
     | --- | --- | --- |
     | Server URL | Server URL to connect to Cofense Triage. | True |
-    | Client ID | Client ID associated with the Server URL to connect to Cofense Triage. | True |
-    | Client Secret | Client Secret associated with the Client ID to connect to Cofense Triage. | True |
+    | Client ID | Client ID and Client Secret associated with the Server URL to connect to Cofense Triage. | True |
     | Maximum number of incidents per fetch | The maximum limit is 200. | False |
     | First fetch time interval | Date or relative timestamp to start fetching incidents from. \(Formats accepted: 2 minutes, 2 hours, 2 days, 2 weeks, 2 months, 2 years, yyyy-mm-dd, yyyy-mm-ddTHH:MM:SSZ, etc\) | False |
     | Report Location | Fetches the report based on the location within Cofense Triage. If not specified, it fetches all the reports. | False |
     | Match Priority | Fetches reports based on the priority of the rules that match the reports. If not specified, it fetches all the reports. | False |
     | Category ID | Fetches reports based on the unique identifier of the category. If not specified, it fetches all the reports. Note: Only the reports that have been processed will be retrieved. | False |
-    | Tags | Fetches reports based on the tags associated with the reports. If not specified, it fetches all the reports. Supports comma separated values. Note: Tags are associated with reports which are in Inbox or Recon. | False |
+    | Tags | Fetches reports based on the tags associated with the reports. If not specified, it fetches all the reports. Supports comma separated values. Note: Tags are associated with reports which are in Reconnaissance. | False |
     | Categorization Tags | Fetches reports based on the tags assigned when the reported email was processed. If not specified, it fetches all the reports. Supports comma separated values. Note: Categorization tags are associated with the reports which are processed. | False |
+    | Incident Mirroring Direction | Choose the direction to mirror the incident: Incoming (from Cofens Triage to XSOAR). | False |
     | Advanced Filters | Fetches incidents based on the advanced filters and type of the incident to be fetched. Specify the filters to filter the incidents by attribute values. Note: Enter values in key-value JSON format. To separate multiple values of a single attribute, use commas. Format accepted: \{"attribute1_operator": "value1, value2", "attribute2_operator" : "value3, value4"\} For example: \{"updated_at_gt":"2020-10-26T10:48:16.834Z","categorization_tags_any":"test, snow"\} | False |
     | Use system proxy settings |  | False |
     | Trust any certificate (not secure) |  | False |
@@ -43,7 +58,7 @@ If Categorization tags are provided in fetch incident parameters:
 - The Report Location must be Processed.
 
 If Tags are provided in fetch incident parameters:
-- The Report Location can be Inbox or Reconnaissance.
+- The Report Location must be Reconnaissance.
 
 ## Filtering
 For all the list commands provided filter_by argument to filter list by attribute values.
@@ -94,7 +109,10 @@ comparison operators:
 - `none`: Returns results when a resource is not tagged with any of the specified tags.
 
 ## Mirroring Integration Feature
-- All users with 6.0.0 and higher would be able to get the updated reports from Cofense Triage (called Mirroring Integration feature). Users with a version less than 6.0.0 would not get the updated reports once pulled from Cofense Triage via fetch incident.
+- All users with 6.0.0 and higher would be able to get the updated reports from Cofense Triage (called Mirroring Integration feature).
+- The integration imports reported emails as incidents. It allows to mirror incidents from Cofense Triage to Cortex SOAR. This can be made possible by selecting `Incoming` in the following option:
+    - Incident Mirroring Direction
+    ![Mirroring Configuration](./../../doc_files/mirroring_configuration.png)
 
 ## Commands
 You can execute these commands from the Cortex XSOAR CLI, as part of an automation, or in a playbook.
@@ -116,10 +134,10 @@ Threat indicators identify the threat level of an email's subject, sender, domai
 | page_size | Specify the number of threat indicators to retrieve per page. Note: Possible values are between 1 and 200. Default is 20. | Optional | 
 | page_number | Specify a page number to retrieve the threat indicators. Default is 1. | Optional | 
 | sort_by | Specify the attributes to sort the threat indicators. Note: The default sort order for an attribute is ascending. Prefix the attributes with a hyphen to sort in descending order. For example: threat_level, -created_at. | Optional | 
-| filter_by | Specify the filters to filter the list of threat indicators by attribute values. Note: Enter values in key-value JSON format. To separate multiple values of a single attribute, use commas. Add backslash(\) before quotes. Format accepted: {\"attribute1_operator \": \"value1, value2\", \"attribute2_operator\" : \"value3, value4\"} For example: {\"threat_level_eq\":\"Malicious,Benign\", \"updated_at_gt\":\"2020-10-26T10:48:16.834Z\"}. | Optional | 
+| filter_by | Specify the filters to filter the list of threat indicators by attribute values. Note: Enter values in key-value JSON format. To separate multiple values of a single attribute, use commas. Add backslash(\\) before quotes. Format accepted: {\\"attribute1_operator \\": \\"value1, value2\\", \\"attribute2_operator\\" : \\"value3, value4\\"} For example: {\\"threat_level_eq\\":\\"Malicious,Benign\\", \\"updated_at_gt\\":\\"2020-10-26T10:48:16.834Z\\"}. | Optional | 
 | fields_to_retrieve | Specify the fields to retrieve the mentioned attributes only. For example: threat_level, threat_type, threat_value. | Optional | 
 | threat_level | Specify the level of the threat to retrieve the threat indicators. Some possible values are: Malicious, Suspicious, Benign. | Optional | 
-| threat_type | Specify the type of the threat to retrieve the threat indicators. Some possible values are: Sender, Subject, Domain, URL, MD5, or SHA256. | Optional | 
+| threat_type | Specify the type of the threat to retrieve the threat indicators. Some possible values are: Sender, Subject, Domain, URL, MD5, SHA256, Hostname, or Header. | Optional | 
 | threat_value | Specify the value corresponding to the type of threat indicated in threat_type to retrieve the threat indicators. | Optional | 
 | threat_source | Specify the value corresponding to the source of the threat indicator. | Optional | 
 | created_at | Specify the date and time of creation, from when to retrieve the threat indicators. Formats accepted: 2 minutes, 2 hours, 2 days, 2 weeks, 2 months, 2 years, yyyy-mm-dd, yyyy-mm-ddTHH:MM:SSZ, etc. | Optional | 
@@ -265,7 +283,7 @@ Retrieves a report or a list of reports based on the filter values provided in t
 | page_size | Specify the number of reports to retrieve per page. Note: Possible values are between 1 and 200. Default is 20. | Optional | 
 | page_number | Specify a page number to retrieve the reports. Default is 1. | Optional | 
 | sort_by | Specify the attributes to sort the reports. Note: The default sort order for an attribute is ascending. Prefix the attributes with a hyphen to sort in descending order. For example: -received_at, match_priority. | Optional | 
-| filter_by | Specify the filters to filter the list of reports by attribute values. Note: Enter values in key-value JSON format. To separate multiple values of a single attribute, use commas. Add backslash(\) before quotes. Format accepted: {\"attribute1_operator \": \"value1, value2\", \"attribute2_operator\" : \"value3, value4\"} For example: {\"updated_at_gt\":\"2020-10-26T10:48:16.834Z\",\"categorization_tags_any\":\"test, snow\"}. | Optional | 
+| filter_by | Specify the filters to filter the list of reports by attribute values. Note: Enter values in key-value JSON format. To separate multiple values of a single attribute, use commas. Add backslash(\\) before quotes. Format accepted: {\\"attribute1_operator \\": \\"value1, value2\\", \\"attribute2_operator\\" : \\"value3, value4\\"} For example: {\\"updated_at_gt\\":\\"2020-10-26T10:48:16.834Z\\",\\"categorization_tags_any\\":\\"test, snow\\"}. | Optional | 
 | fields_to_retrieve | Specify the fields to retrieve the mentioned attributes only. For example: location, from_address. | Optional | 
 | match_priority | Specify the priority to retrieve the reports based on the priority of the rules that match the reports. Possible values are: 0, 1, 2, 3, 4, 5. | Optional | 
 | tags | Specify the tags to retrieve the reports based on the tags associated with the reports. | Optional | 
@@ -666,6 +684,20 @@ Downloads the raw email for the report that matches the specified report ID.
 }
 ```
 
+#### Human Readable Output
+
+>Uploaded file: Report ID - 4.eml Download
+
+>|Property|Value|
+>|---|---|
+>| Type | eml |
+>| Size | 10,069 bytes |
+>| Info | HTML document, ASCII text, with CRLF line terminators |
+>| MD5 | 12345727a75f1231be55c9d47513f510 |
+>| SHA1 | 3db21fa900493764134a0fb93867cd712086ad1c |
+>| SHA256 | 123c12345c3131479335d5d118da42118e802a48f4bc91992b8e93f87ec95f5c |
+>| SHA512 | d2e415d721796901ed9867570b62604ac5ee48e0c4a4541a0e5e12345678eaa89a2873ffff61b024ec867f9f0c4a45ddf6534be718393e087e6da017a071a723 |
+>| SSDeep | 12:sentTp60+VqTKBV+VUllVDVSm+s1C1609QfzYxVNtMt7JvVNtMtZTRVNtMtO6hFC:smVp6DJV+6ku8QfzYr |
 
 ### cofense-report-categorize
 ***
@@ -681,9 +713,7 @@ Categorizes a report into a specific category provided by the user.
 | --- | --- | --- |
 | id | Specify the ID of the report to be categorized. Note: To retrieve id, execute cofense-report-list command. | Required | 
 | category_id | Specify the ID of the category in which report is to be categorized. Note: To retrieve category_id, execute cofense-category-list command. | Required | 
-| categorization_tags | Specify the tags that are to be assigned to the report. | Optional | 
-| response_id | Specify the ID of the response. Note: To retrieve response_id, execute cofense-response-list command. | Optional | 
-
+| categorization_tags | Specify the tags that are to be assigned to the report. | Optional |
 
 #### Context Output
 
@@ -713,7 +743,7 @@ Categories are applied while processing the email to indicate the type of threat
 | page_size | Specify the number of categories to retrieve per page. Note: Possible values are between 1 and 200. Default is 20. | Optional | 
 | page_number | Specify a page number to retrieve the categories. Default is 1. | Optional | 
 | sort_by | Specify the attributes to sort the categories. Note: The default sort order for an attribute is ascending. Prefix the attributes with a hyphen to sort in descending order. For example: score, -name. | Optional | 
-| filter_by | Specify the filters to filter the list of categories by attribute values. Note: Enter values in key-value JSON format. To separate multiple values of a single attribute, use commas. Add backslash(\) before quotes. Format accepted: {\"attribute1_operator \": \"value1, value2\", \"attribute2_operator\" : \"value3, value4\"} For example: {\"score_gteq\":\"2,10\", \"updated_at_gt\":\"2020-10-26T10:48:16.834Z\"}. | Optional | 
+| filter_by | Specify the filters to filter the list of categories by attribute values. Note: Enter values in key-value JSON format. To separate multiple values of a single attribute, use commas. Add backslash(\\) before quotes. Format accepted: {\\"attribute1_operator \\": \\"value1, value2\\", \\"attribute2_operator\\" : \\"value3, value4\\"} For example: {\\"score_gteq\\":\\"2,10\\", \\"updated_at_gt\\":\\"2020-10-26T10:48:16.834Z\\"}. | Optional | 
 | fields_to_retrieve | Specify the fields to retrieve the mentioned attributes only. For example: name, score. | Optional | 
 | name | Specify the name of the category to retrieve the category accordingly. | Optional | 
 | is_malicious | Specify that the categories to be retrieved should be malicious or not. Possible values are: true, false. | Optional | 
@@ -841,7 +871,7 @@ Rules identify specific characteristics for categorizing the reported emails.
 | page_size | Specify the number of rules to retrieve per page. Note: Possible values are between 1 and 200. Default is 20. | Optional | 
 | page_number | Specify a page number to retrieve the rules. Default is 1. | Optional | 
 | sort_by | Specify the attributes to sort the rules. Note: The default sort order for an attribute is ascending. Prefix the attributes with a hyphen to sort in descending order. For example: -name, priority. | Optional | 
-| filter_by | Specify the filters to filter the list of rules by attribute values. Note: Enter values in key-value JSON format. To separate multiple values of a single attribute, use commas. Add backslash(\) before quotes. Format accepted: {\"attribute1_operator \": \"value1, value2\", \"attribute2_operator\" : \"value3, value4\"} For example: {\"priority_eq\":\"2,3\", \"name_cont\":\"Test\"}. | Optional | 
+| filter_by | Specify the filters to filter the list of rules by attribute values. Note: Enter values in key-value JSON format. To separate multiple values of a single attribute, use commas. Add backslash(\\) before quotes. Format accepted: {\\"attribute1_operator \\": \\"value1, value2\\", \\"attribute2_operator\\" : \\"value3, value4\\"} For example: {\\"priority_eq\\":\\"2,3\\", \\"name_cont\\":\\"Test\\"}. | Optional | 
 | fields_to_retrieve | Specify the fields to retrieve the mentioned attributes only. For example: name, description. | Optional | 
 | name | Specify the name of the rule to retrieve the rule. | Optional | 
 | priority | Specify the priority of the rule to retrieve the rule. Some possible values are: 1, 2, 3, 4, 5. | Optional | 
@@ -1053,7 +1083,7 @@ URLs are the threats (or non-threat)  that are detected in the reported emails.
 | page_size | Specify the number of URLs to retrieve per page. Note: Possible values are between 1 and 200. Default is 20. | Optional | 
 | page_number | Specify a page number to retrieve the URLs. Default is 1. | Optional | 
 | sort_by | Specify the attributes to sort the URLs. Note: The default sort order for an attribute is ascending. Prefix the attributes with a hyphen to sort in descending order. For example: -created_at, -updated_at. | Optional | 
-| filter_by | Specify the filters to filter the list of urls by attribute values. Note: Enter values in key-value JSON format. To separate multiple values of a single attribute, use commas. Add backslash(\) before quotes. Format accepted: {\"attribute1_operator \": \"value1, value2\", \"attribute2_operator\" : \"value3, value4\"} For example: {\"risk_score_eq\":\"1,2\", \"updated_at_gt\":\"2020-10-26T10:48:16.834Z\"}. | Optional | 
+| filter_by | Specify the filters to filter the list of urls by attribute values. Note: Enter values in key-value JSON format. To separate multiple values of a single attribute, use commas. Add backslash(\\) before quotes. Format accepted: {\\"attribute1_operator \\": \\"value1, value2\\", \\"attribute2_operator\\" : \\"value3, value4\\"} For example: {\\"risk_score_eq\\":\\"1,2\\", \\"updated_at_gt\\":\\"2020-10-26T10:48:16.834Z\\"}. | Optional | 
 | fields_to_retrieve | Specify the fields to retrieve the mentioned attributes only. For example: url, risk_score. | Optional | 
 | risk_score | Specify the risk scores to retrieve the urls. | Optional | 
 | created_at | Specify the date and time of creation, from when to retrieve the URLs. Formats accepted: 2 minutes, 2 hours, 2 days, 2 weeks, 2 months, 2 years, yyyy-mm-dd, yyyy-mm-ddTHH:MM:SSZ, etc. | Optional | 
@@ -1319,7 +1349,7 @@ Reporters are employees of an organization who send, or report, suspicious email
 | page_size | Specify the number of reporters to retrieve per page. Note: Possible values are between 1 and 200. Default is 20. | Optional | 
 | page_number | Specify a page number to retrieve the reporters. Default is 1. | Optional | 
 | sort_by | Specify the attributes to sort the reporters. Note: The default sort order for an attribute is ascending. Prefix the attributes with a hyphen to sort in descending order. For example: reports_count, -email. | Optional | 
-| filter_by | Specify the filters to filter the list of reporters by attribute values. Note: Enter values in key-value JSON format. To separate multiple values of a single attribute, use commas. Add backslash(\) before quotes. Format accepted: {\"attribute1_operator \": \"value1, value2\", \"attribute2_operator\" : \"value3, value4\"} For example: {\"reputation_score_eq\":\"1,2\", \"reports_count_gt\":\"3\"}. | Optional | 
+| filter_by | Specify the filters to filter the list of reporters by attribute values. Note: Enter values in key-value JSON format. To separate multiple values of a single attribute, use commas. Add backslash(\\) before quotes. Format accepted: {\\"attribute1_operator \\": \\"value1, value2\\", \\"attribute2_operator\\" : \\"value3, value4\\"} For example: {\\"reputation_score_eq\\":\\"1,2\\", \\"reports_count_gt\\":\\"3\\"}. | Optional | 
 | fields_to_retrieve | Specify the fields to retrieve the mentioned attributes only. For example: email, reports_count. | Optional | 
 | reputation_score | Specify reputation score to retrieve the reporters. | Optional | 
 | vip | Specify that the reporter to be retrieved is VIP or non-VIP. Possible values are: true, false. | Optional | 
@@ -1430,217 +1460,6 @@ Reporters are employees of an organization who send, or report, suspicious email
 >| 6 | devcomm@xyz.com | 2 | -5 | true | 2020-05-05T18:44:01.000Z | 2020-10-21T20:54:25.915Z | 2020-12-03T10:51:25.482Z |
 
 
-### cofense-response-create
-***
-Creates a response based on the values provided in the command arguments.
-Responses provide feedback (acknowledgment) to reporters about emails they reported.
-
-
-#### Base Command
-
-`cofense-response-create`
-#### Input
-
-| **Argument Name** | **Description** | **Required** |
-| --- | --- | --- |
-| name | Specify the name of the response. | Required | 
-| description | Specify the description of response. | Optional | 
-| to_reporter | Specify whether to add the reporter to the response recipient list or not. Note: Either to_reporter or to_other, or both, must be enabled. Possible values are: true, false. Default is true. | Optional | 
-| to_other | Specify whether to add the addresses specified in to_other_address to the response recipient list or not. Note: If true, specify one or more values in to_other_address. Either to_reporter or to_other, or both, must be enabled. Possible values are: true, false. Default is false. | Optional | 
-| to_other_address | Specify the comma-separated list of email addresses to send the response to. Note: Works with to_other. | Optional | 
-| cc_address | Specify the comma-separated list of email addresses to CC the response to. | Optional | 
-| bcc_address | Specify the comma-separated list of email addresses to BCC the response to. | Optional | 
-| subject | Specify the subject of response. | Required | 
-| attach_original | Specify whether to attach the original email to the response or not. Possible values are: true, false. Default is false. | Optional | 
-| body | Specify the body of response. | Required | 
-
-
-#### Context Output
-
-| **Path** | **Type** | **Description** |
-| --- | --- | --- |
-| Cofense.Response.id | String | Unique identifier of the response. | 
-| Cofense.Response.type | String | Type of the resource of Cofense Triage. | 
-| Cofense.Response.links.self | String | Link of the resource. | 
-| Cofense.Response.attributes.name | String | Short display name of the response sent to individuals when a report is categorized. | 
-| Cofense.Response.attributes.description | String | Expanded name or description of the response. | 
-| Cofense.Response.attributes.to_reporter | Boolean | Whether to add the reporter to the response recipient list \(true\) or not \(false\). The default is true. | 
-| Cofense.Response.attributes.to_other | Boolean | Whether to add the addresses specified in to_other_address to the response recipient list \(true\) or not \(false\). The default is false. | 
-| Cofense.Response.attributes.to_other_address | String | Comma-separated list of email addresses to send the response to. | 
-| Cofense.Response.attributes.cc_address | String | Comma-separated list of email addresses to CC the response to. | 
-| Cofense.Response.attributes.bcc_address | String | Comma-separated list of email addresses to BCC the response to. | 
-| Cofense.Response.attributes.subject | String | Subject of the response. | 
-| Cofense.Response.attributes.attach_original | Boolean | Whether to attach the original email to the response \(true\) or not \(false\). The default is false. | 
-| Cofense.Response.attributes.body | String | HTML or plain-text body of the email. | 
-| Cofense.Response.attributes.created_at | Date | Date and time, in ISO 8601 format, when the resource was created. | 
-| Cofense.Response.attributes.updated_at | Date | Date and time, in ISO 8601 format, when the resource was last updated. | 
-| Cofense.Response.relationships.one_clicks.links.self | String | Link to retrieve the one-click categorizations that send the response when processing reports.  | 
-| Cofense.Response.relationships.one_clicks.links.related | String | Link to retrieve the detailed information of the one-click categorizations that send the response when processing reports. | 
-
-
-#### Command Example
-```!cofense-response-create body="Sample body" name="Sample name" subject="Sample subject"```
-
-#### Context Example
-```json
-{
-    "Cofense": {
-        "Response": {
-            "attributes": {
-                "attach_original": false,
-                "body": "Sample body",
-                "created_at": "2021-06-22T06:07:25.240Z",
-                "name": "Sample name",
-                "subject": "Sample subject",
-                "to_other": false,
-                "to_reporter": true,
-                "updated_at": "2021-06-22T06:07:25.240Z"
-            },
-            "id": "165",
-            "links": {
-                "self": "https://triage.example.com/api/public/v2/responses/165"
-            },
-            "relationships": {
-                "one_clicks": {
-                    "links": {
-                        "related": "https://triage.example.com/api/public/v2/responses/165/one_clicks",
-                        "self": "https://triage.example.com/api/public/v2/responses/165/relationships/one_clicks"
-                    }
-                }
-            },
-            "type": "responses"
-        }
-    }
-}
-```
-
-#### Human Readable Output
-
->### Response(s)
->|Response ID|Name|Subject|Attach Original|Created At|Updated At|
->|---|---|---|---|---|---|
->| 165 | Sample name | Sample subject | false | 2021-06-22T06:07:25.240Z | 2021-06-22T06:07:25.240Z |
-
-
-### cofense-response-list
-***
-Retrieves responses based on the values provided in the command arguments. 
-Responses provide feedback (acknowledgment) to reporters about emails they reported.
-
-
-#### Base Command
-
-`cofense-response-list`
-#### Input
-
-| **Argument Name** | **Description** | **Required** |
-| --- | --- | --- |
-| id | Specify the ID of the response to retrieve a specific response. Note: If 'id' argument is provided, then apart from 'fields_to_retrieve', all arguments will be neglected. | Optional | 
-| page_size | Specify the number of responses to retrieve per page. Note: Possible values are between 1 and 200. Default is 20. | Optional | 
-| page_number | Specify a page number to retrieve the responses. Default is 1. | Optional | 
-| sort_by | Specify the attributes to sort the responses. Note: The default sort order for an attribute is ascending. Prefix the attributes with a hyphen to sort in descending order. For example: name, -description. | Optional | 
-| filter_by | Specify the filters to filter the list of responses by attribute values. Note: Enter values in key-value JSON format. To separate multiple values of a single attribute, use commas. Add backslash(\) before quotes. Format accepted: {\"attribute1_operator \": \"value1, value2\", \"attribute2_operator\" : \"value3, value4\"} For example: {\"name_eq\":\"hello,default\", \"updated_at_gt\":\"2020-10-26T10:48:16.834Z\"}. | Optional | 
-| fields_to_retrieve | Specify the fields to retrieve the mentioned attributes only. For example: name, body. | Optional | 
-| name | Specify the name of the response to retrieve the response. | Optional | 
-| created_at | Specify the date and time of creation, from when to retrieve the responses. Formats accepted: 2 minutes, 2 hours, 2 days, 2 weeks, 2 months, 2 years, yyyy-mm-dd, yyyy-mm-ddTHH:MM:SSZ, etc. | Optional | 
-| updated_at | Specify the date and time of updation, from when to retrieve the responses. Formats accepted: 2 minutes, 2 hours, 2 days, 2 weeks, 2 months, 2 years, yyyy-mm-dd, yyyy-mm-ddTHH:MM:SSZ, etc. | Optional | 
-
-
-#### Context Output
-
-| **Path** | **Type** | **Description** |
-| --- | --- | --- |
-| Cofense.Response.id | String | Unique identifier of the response. | 
-| Cofense.Response.type | String | Type of the resource of Cofense Triage. | 
-| Cofense.Response.links.self | String | Link of the resource. | 
-| Cofense.Response.attributes.name | String | Short display name of the response sent to individuals when a report is categorized. | 
-| Cofense.Response.attributes.description | String | Expanded name or description of the response. | 
-| Cofense.Response.attributes.to_reporter | Boolean | Whether to add the reporter to the response recipient list \(true\) or not \(false\). The default is true. | 
-| Cofense.Response.attributes.to_other | Boolean | Whether to add the addresses specified in to_other_address to the response recipient list \(true\) or not \(false\). The default is false. | 
-| Cofense.Response.attributes.to_other_address | String | Comma-separated list of email addresses to send the response to. | 
-| Cofense.Response.attributes.cc_address | String | Comma-separated list of email addresses to CC the response to. | 
-| Cofense.Response.attributes.bcc_address | String | Comma-separated list of email addresses to BCC the response to. | 
-| Cofense.Response.attributes.subject | String | Subject of the response. Supports variables. | 
-| Cofense.Response.attributes.attach_original | Boolean | Whether to attach the original email to the response \(true\) or not \(false\). The default is false. | 
-| Cofense.Response.attributes.body | String | HTML or plain-text body of the email. | 
-| Cofense.Response.attributes.created_at | Date | Date and time, in ISO 8601 format, when the resource was created. | 
-| Cofense.Response.attributes.updated_at | Date | Date and time, in ISO 8601 format, when the resource was last updated. | 
-| Cofense.Response.relationships.one_clicks.links.self | String | Link to retrieve the one-click categorizations that send the response when processing reports.  | 
-| Cofense.Response.relationships.one_clicks.links.related | String | Link to retrieve the detailed information of the one-click categorizations that send the response when processing reports. | 
-
-
-#### Command Example
-```!cofense-response-list page_size=2```
-
-#### Context Example
-```json
-{
-    "Cofense": {
-        "Response": [
-            {
-                "attributes": {
-                    "attach_original": false,
-                    "body": "Sample body",
-                    "created_at": "2020-10-21T15:30:57.000Z",
-                    "name": "test_update2",
-                    "subject": "Email [SUBJECT] reported [REPORT_DATE] is SAFE",
-                    "to_other": false,
-                    "to_reporter": true,
-                    "updated_at": "2021-06-01T16:51:17.425Z"
-                },
-                "id": "1",
-                "links": {
-                    "self": "https://triage.example.com/api/public/v2/responses/1"
-                },
-                "relationships": {
-                    "one_clicks": {
-                        "links": {
-                            "related": "https://triage.example.com/api/public/v2/responses/1/one_clicks",
-                            "self": "https://triage.example.com/api/public/v2/responses/1/relationships/one_clicks"
-                        }
-                    }
-                },
-                "type": "responses"
-            },
-            {
-                "attributes": {
-                    "attach_original": false,
-                    "body": "Sample body",
-                    "created_at": "2020-10-21T15:30:57.000Z",
-                    "name": "External Email - Safe to Interact With",
-                    "subject": "Email [SUBJECT] reported [REPORT_DATE] is SAFE",
-                    "to_other": false,
-                    "to_reporter": true,
-                    "updated_at": "2021-06-01T16:51:17.428Z"
-                },
-                "id": "2",
-                "links": {
-                    "self": "https://triage.example.com/api/public/v2/responses/2"
-                },
-                "relationships": {
-                    "one_clicks": {
-                        "links": {
-                            "related": "https://triage.example.com/api/public/v2/responses/2/one_clicks",
-                            "self": "https://triage.example.com/api/public/v2/responses/2/relationships/one_clicks"
-                        }
-                    }
-                },
-                "type": "responses"
-            }
-        ]
-    }
-}
-```
-
-#### Human Readable Output
-
->### Response(s)
->|Response ID|Name|Subject|Attach Original|Created At|Updated At|
->|---|---|---|---|---|---|
->| 1 | test_update2 | Email [SUBJECT] reported [REPORT_DATE] is SAFE | false | 2020-10-21T15:30:57.000Z | 2021-06-01T16:51:17.425Z |
->| 2 | External Email - Safe to Interact With | Email [SUBJECT] reported [REPORT_DATE] is SAFE | false | 2020-10-21T15:30:57.000Z | 2021-06-01T16:51:17.428Z |
-
-
 ### cofense-integration-submission-get
 ***
 Retrieves integration submission based on the filter values provided in the command arguments.
@@ -1662,7 +1481,7 @@ Note:
 | page_size | Specify the number of integration submissions to retrieve per page. Note: Possible values are between 1 and 200. Default is 20. | Optional | 
 | page_number | Specify a page number to retrieve the integration submissions. | Optional | 
 | sort_by | Specify the attributes to sort the integration submissions. Note: The default sort order for an attribute is ascending. Prefix the attributes with a hyphen to sort in descending order. For example: status, -id. | Optional | 
-| filter_by | Specify the filters to filter the list of integration submissions by attribute values. Note: Enter values in key-value JSON format. To separate multiple values of a single attribute, use commas. Add backslash(\) before quotes. Format accepted: {\"attribute1_operator \": \"value1, value2\", \"attribute2_operator\" : \"value3, value4\"} For example: {\"status_eq\":\"complete\", \"risk_score_eq\":\"0,1\"}. | Optional | 
+| filter_by | Specify the filters to filter the list of integration submissions by attribute values. Note: Enter values in key-value JSON format. To separate multiple values of a single attribute, use commas. Add backslash(\\) before quotes. Format accepted: {\\"attribute1_operator \\": \\"value1, value2\\", \\"attribute2_operator\\" : \\"value3, value4\\"} For example: {\\"status_eq\\":\\"complete\\", \\"risk_score_eq\\":\\"0,1\\"}. | Optional | 
 | fields_to_retrieve | Specify the fields to retrieve the mentioned attributes only. For example: status, kind. | Optional | 
 | status | Specify the status to retrieve the integration submission. Some possible values are: ending, complete, target_not_found, error, running, or hash_not_found. | Optional | 
 | kind | Specify the kind to retrieve the integration submission. Some possible values are: File, Hash, URL. | Optional | 
@@ -1682,15 +1501,13 @@ Note:
 | Cofense.IntegrationSubmission.attributes.result | String | Result of the integration submission. | 
 | Cofense.IntegrationSubmission.attributes.kind | String | Kind of the integration submission. | 
 | Cofense.IntegrationSubmission.attributes.risk_score | Number | Risk score of the integration submission. | 
-| Cofense.IntegrationSubmission.attributes.created_at | Date | Date and time, in ISO 8601 format,
-when the resource was created. | 
-| Cofense.IntegrationSubmission.attributes.updated_at | Date | Date and time, in ISO 8601 format,
-when the resource was last updated. | 
+| Cofense.IntegrationSubmission.attributes.created_at | Date | Date and time, in ISO 8601 format, when the resource was created. | 
+| Cofense.IntegrationSubmission.attributes.updated_at | Date | Date and time, in ISO 8601 format, when the resource was last updated. | 
 | Cofense.IntegrationSubmission.relationships.integration.links.self | String | Link to retrieve the integration associated with the integration submission. | 
 | Cofense.IntegrationSubmission.relationships.integration.links.related | String | Link to retrieve the detailed information of integration associated with the integration submission. | 
 | Cofense.IntegrationSubmission.relationships.integration.data.type | String | Type of the integration associated with the integration submission. | 
 | Cofense.IntegrationSubmission.relationships.integration.data.id | String | Unique Identifier of the integration associated with the integration submission. | 
-| Cofense.IntegrationSubmission.relationships.target.links.self | String | Link to retrieve the target associated with the integration submission | 
+| Cofense.IntegrationSubmission.relationships.target.links.self | String | Link to retrieve the target associated with the integration submission. | 
 | Cofense.IntegrationSubmission.relationships.target.links.related | String | Link to retrieve the detailed information of the target associated with the integration submission. | 
 | Cofense.IntegrationSubmission.relationships.target.data.type | String | Type of the target associated with the integration submission. | 
 | Cofense.IntegrationSubmission.relationships.target.data.id | String | Unique Identifier of the target associated with the integration submission. | 
@@ -1844,7 +1661,7 @@ Attachment payloads identify the MIME type and MD5 and SHA256 hash signatures of
 | page_size | Specify the number of attachment payloads to retrieve per page. Note: Possible values are between 1 and 200. Default is 20. | Optional | 
 | page_number | Specify a page number to retrieve the attachment payloads. Default is 1. | Optional | 
 | sort_by | Specify the attributes to sort the attachment payloads. Note: The default sort order for an attribute is ascending. Prefix the attributes with a hyphen to sort in descending order. For example: risk_score, -id. | Optional | 
-| filter_by | Specify the filters to filter the list of attachment payloads by attribute values. Note: Enter values in key-value JSON format. To separate multiple values of a single attribute, use commas. Add backslash(\) before quotes. Format accepted: {\"attribute1_operator \": \"value1, value2\", \"attribute2_operator\" : \"value3, value4\"} For example: {\"risk_score\":\"0,1\", \"created_at_gteq\":\"2020-04-13T10:48:16.834Z\"}. | Optional | 
+| filter_by | Specify the filters to filter the list of attachment payloads by attribute values. Note: Enter values in key-value JSON format. To separate multiple values of a single attribute, use commas. Add backslash(\\) before quotes. Format accepted: {\\"attribute1_operator \\": \\"value1, value2\\", \\"attribute2_operator\\" : \\"value3, value4\\"} For example: {\\"risk_score\\":\\"0,1\\", \\"created_at_gteq\\":\\"2020-04-13T10:48:16.834Z\\"}. | Optional | 
 | fields_to_retrieve | Specify the fields to retrieve the mentioned attributes only. For example: md5, risk_score. | Optional | 
 | risk_score | Specify the risk scores to retrieve the attachment payloads. | Optional | 
 | created_at | Specify the date and time of creation, from when to retrieve the attachment payloads. Formats accepted: 2 minutes, 2 hours, 2 days, 2 weeks, 2 months, 2 years, yyyy-mm-dd, yyyy-mm-ddTHH:MM:SSZ, etc. | Optional | 
@@ -1992,10 +1809,10 @@ Retrieves comments based on the filter values provided in the command arguments.
 | page_size | Specify the number of comments to retrieve per page. Note: Possible values are between 1 and 200. Default is 20. | Optional | 
 | page_number | Specify a page number to retrieve the comments. Default is 1. | Optional | 
 | sort_by | Specify the attributes to sort the comments. Note: The default sort order for an attribute is ascending. Prefix the attributes with a hyphen to sort in descending order. For example: -created_at, body. | Optional | 
-| filter_by | Specify the filters to filter the list of comments by attribute values. Note: Enter values in key-value JSON format. To separate multiple values of a single attribute, use commas. Add backslash(\) before quotes. Format accepted: {\"attribute1_operator \": \"value1, value2\", \"attribute2_operator\" : \"value3, value4\"} For example: {\"body_format_eq\":\"json\", \"created_at_gteq\":\"2021-04-13T10:48:16.834Z\"}. | Optional | 
+| filter_by | Specify the filters to filter the list of comments by attribute values. Note: Enter values in key-value JSON format. To separate multiple values of a single attribute, use commas. Add backslash(\\) before quotes. Format accepted: {\\"attribute1_operator \\": \\"value1, value2\\", \\"attribute2_operator\\" : \\"value3, value4\\"} For example: {\\"body_format_eq\\":\\"json\\", \\"created_at_gteq\\":\\"2021-04-13T10:48:16.834Z\\"}. | Optional | 
 | fields_to_retrieve | Specify the fields to retrieve the mentioned attributes only. For example: body, body_format. | Optional | 
 | body_format | Specify the format of the comment body to retrieve the comments. Possible values are: text, json. | Optional | 
-| tags | Specify the tags to retrieve the comments based on the tags associated with the reports. | Optional | 
+| tags | Specify the tags to retrieve the comments based on the tags associated with the comments. | Optional | 
 | report_id | Specify the ID of the report to retrieve the comments specific to the report. Note: When both report_id and threat_indicator_id are provided, higher priority will be given to report_id. Note: To retrieve report_id, execute cofense-report-list command. | Optional | 
 | threat_indicator_id | Specify the ID of the threat indicator to retrieve the comments specific to the threat indicator. Note: When both report_id and threat_indicator_id are provided, higher priority will be given to report_id. Note: To retrieve threat_indicator_id, execute cofense-threat-indicator-list command. | Optional | 
 | created_at | Specify the date and time of creation, from when to retrieve the comments. Formats accepted: 2 minutes, 2 hours, 2 days, 2 weeks, 2 months, 2 years, yyyy-mm-dd, yyyy-mm-ddTHH:MM:SSZ, etc. | Optional | 
@@ -2172,7 +1989,7 @@ Retrieves clusters based on the filter values provided in the command arguments.
 | page_size | Specify the number of clusters to retrieve per page. Note: Possible values are between 1 and 200. Default is 20. | Optional | 
 | page_number | Specify a page number to retrieve the clusters. Default is 1. | Optional | 
 | sort_by | Specify the attributes to sort the clusters. Note: The default sort order for an attribute is ascending. Prefix the attributes with a hyphen to sort in descending order. For example: created_at, -updated_at. | Optional | 
-| filter_by | Specify the filters to filter the list of clusters by attribute values. Note: Enter values in key-value JSON format. To separate multiple values of a single attribute, use commas. Add backslash(\) before quotes. Format accepted: {\"attribute1_operator \": \"value1, value2\", \"attribute2_operator\" : \"value3, value4\"} For example: {\"risk_score_eq\":\"1,2\",  \"updated_at_gt\":\"2020-10-26T10:48:16.834Z\"}. | Optional | 
+| filter_by | Specify the filters to filter the list of clusters by attribute values. Note: Enter values in key-value JSON format. To separate multiple values of a single attribute, use commas. Add backslash(\\) before quotes. Format accepted: {\\"attribute1_operator \\": \\"value1, value2\\", \\"attribute2_operator\\" : \\"value3, value4\\"} For example: {\\"risk_score_eq\\":\\"1,2\\",  \\"updated_at_gt\\":\\"2020-10-26T10:48:16.834Z\\"}. | Optional | 
 | fields_to_retrieve | Specify the fields to retrieve the mentioned attributes only. For example: unprocessed_reports_count, processed_reports_count. | Optional | 
 | tags | Specify the tags to retrieve the cluster. | Optional | 
 | match_priority | Specify the priority to retrieve the cluster based on the priority of the rules that match the reports in the cluster. Possible values are: 0, 1, 2, 3, 4, 5. | Optional | 
@@ -2500,3 +2317,77 @@ There is no context output for this command.
 
 #### Command Example
 ```!get-remote-data id=34 lastUpdate="3 days"```
+
+
+### get-modified-remote-data
+***
+Gets the list of incidents that were modified since the last update time. Note that this method is here for debugging purposes. The get-modified-remote-data command is used as part of a Mirroring feature, which is available from version 6.1.
+
+
+#### Base Command
+
+`get-modified-remote-data`
+#### Input
+
+| **Argument Name** | **Description** | **Required** |
+| --- | --- | --- |
+| lastUpdate | Date string in local time representing the last time the incident was updated. The incident is only returned if it was modified after the last update time. | Required | 
+
+
+#### Context Output
+
+There is no context output for this command.
+
+#### Command Example
+```!get-modified-remote-data lastUpdate="3 days"```
+
+
+### cofense-report-image-download
+***
+Downloads the image of the report that matches the specified report ID.
+
+
+#### Base Command
+
+`cofense-report-image-download`
+#### Input
+
+| **Argument Name** | **Description** | **Required** |
+| --- | --- | --- |
+| id | Specify the ID of the report to download the image file. Note: To retrieve id, execute cofense-report-list command. | Required | 
+| type | The image type of the report the user wants to download. Some possible values are: jpg, png. Default is png. | Optional | 
+
+
+#### Context Output
+
+| **Path** | **Type** | **Description** |
+| --- | --- | --- |
+| InfoFile.Name | String | File name. | 
+| InfoFile.EntryID | String | The entry ID of the file. | 
+| InfoFile.Size | Number | File size in bytes. | 
+| InfoFile.Type | String | The file type. | 
+| InfoFile.Info | String | File information. | 
+| InfoFile.Extension | String | File extension. | 
+
+
+#### Command Example
+```!cofense-report-image-download id="4"```
+
+#### Context Example
+```json
+{
+    "InfoFile": {
+        "EntryID": "12345@24e2b8bb-acd8-4ad6-8f7c-5140d65ea600",
+        "Extension": "png",
+        "Info": "image/png",
+        "Name": "Report ID - 4.png",
+        "Size": 63172,
+        "Type": "PNG image data, 400 x 769, 8-bit/color RGBA, non-interlaced"
+    }
+}
+```
+
+#### Human Readable Output
+
+>Uploaded an image: Report ID - 4.png
+![cofense-report-image-download](./../../doc_files/report_image_download.png)
